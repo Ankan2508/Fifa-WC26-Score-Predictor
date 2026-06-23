@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllData, getCrest, isLocked, calcPoints, parseKickoff } from '@/lib/wcdata';
+import { generateMatchInsight } from '@/lib/llm';
 
 let client;
 async function db() {
@@ -10,6 +11,13 @@ async function db() {
     await client.connect();
   }
   return client.db(process.env.DB_NAME || 'wc26');
+}
+
+// Lazy cache of admin overrides per request
+async function getOverrides() {
+  const d = await db();
+  const arr = await d.collection('overrides').find({}).toArray();
+  return Object.fromEntries(arr.map((o) => [o.match_id, o]));
 }
 
 function enrichGame(g, teamMap, stadiumMap) {
@@ -39,9 +47,21 @@ function enrichGame(g, teamMap, stadiumMap) {
 
 async function getEnrichedGames() {
   const data = await getAllData();
+  const overrides = await getOverrides();
   const teamMap = Object.fromEntries(data.teams.map((t) => [t.id, t]));
   const stadiumMap = Object.fromEntries(data.stadiums.map((s) => [s.id, s]));
-  return { games: data.games.map((g) => enrichGame(g, teamMap, stadiumMap)), data, teamMap, stadiumMap };
+  const games = data.games.map((g) => {
+    const enriched = enrichGame(g, teamMap, stadiumMap);
+    const ov = overrides[g.id];
+    if (ov) {
+      if (ov.home_score != null) enriched.homeScore = +ov.home_score;
+      if (ov.away_score != null) enriched.awayScore = +ov.away_score;
+      if (ov.finished) enriched.finished = true;
+      if (ov.locked) enriched.locked = true;
+    }
+    return enriched;
+  });
+  return { games, data, teamMap, stadiumMap };
 }
 
 export async function GET(request, ctx) {
@@ -106,6 +126,45 @@ export async function GET(request, ctx) {
       return NextResponse.json({ leaderboard: board });
     }
     if (path === 'health') return NextResponse.json({ ok: true });
+
+    if (path.startsWith('insights/')) {
+      const matchId = path.split('/')[1];
+      const d = await db();
+      const cached = await d.collection('ai_insights').findOne({ match_id: matchId });
+      if (cached) { delete cached._id; return NextResponse.json({ insight: cached }); }
+      const { games } = await getEnrichedGames();
+      const g = games.find((x) => x.id === matchId);
+      if (!g) return NextResponse.json({ error: 'match not found' }, { status: 404 });
+      // Build recent form: last 3 finished games for each team
+      const recentForTeam = (teamId) =>
+        games.filter((x) => x.finished && (x.homeId === teamId || x.awayId === teamId))
+          .slice(-3)
+          .map((x) => ({
+            usHome: x.homeId === teamId,
+            home: x.home.name, away: x.away.name,
+            homeScore: x.homeScore, awayScore: x.awayScore,
+          }));
+      try {
+        const ai = await generateMatchInsight({
+          home: g.home.name, away: g.away.name, group: g.group, stage: g.stage,
+          recentHome: recentForTeam(g.homeId), recentAway: recentForTeam(g.awayId),
+        });
+        const doc = { match_id: matchId, ...ai, created_at: new Date() };
+        await d.collection('ai_insights').insertOne({ ...doc });
+        delete doc._id;
+        return NextResponse.json({ insight: doc });
+      } catch (e) {
+        return NextResponse.json({ error: 'AI insight failed: ' + e.message }, { status: 500 });
+      }
+    }
+
+    if (path === 'admin/overrides') {
+      const d = await db();
+      const arr = await d.collection('overrides').find({}).toArray();
+      arr.forEach((o) => delete o._id);
+      return NextResponse.json({ overrides: arr });
+    }
+
     return NextResponse.json({ error: 'not found' }, { status: 404 });
   } catch (e) {
     console.error(e);
@@ -182,6 +241,40 @@ export async function POST(request, ctx) {
         },
         { upsert: true }
       );
+      return NextResponse.json({ ok: true });
+    }
+
+    if (path === 'admin/result') {
+      // Override match result
+      const { match_id, home_score, away_score, locked, finished, clear } = body;
+      if (!match_id) return NextResponse.json({ error: 'missing match_id' }, { status: 400 });
+      if (clear) {
+        await d.collection('overrides').deleteOne({ match_id: String(match_id) });
+        return NextResponse.json({ ok: true, cleared: true });
+      }
+      await d.collection('overrides').updateOne(
+        { match_id: String(match_id) },
+        {
+          $set: {
+            match_id: String(match_id),
+            home_score: home_score != null ? +home_score : null,
+            away_score: away_score != null ? +away_score : null,
+            locked: !!locked,
+            finished: finished !== false && home_score != null && away_score != null,
+            updated_at: new Date(),
+          },
+          $setOnInsert: { id: uuidv4() },
+        },
+        { upsert: true }
+      );
+      return NextResponse.json({ ok: true });
+    }
+
+    if (path === 'admin/sync') {
+      // bust the in-memory cache by reaching into wcdata module via dynamic refresh
+      // We do this by importing and resetting (simple approach: re-call fetch with skip)
+      const mod = await import('@/lib/wcdata');
+      if (mod && mod.cache) { mod.cache.data = null; mod.cache.ts = 0; }
       return NextResponse.json({ ok: true });
     }
 
