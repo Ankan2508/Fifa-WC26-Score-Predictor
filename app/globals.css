@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 73 100% 59%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 0 0% 13%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 0 0% 17%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 17%;
+    --input: 0 0% 17%;
+    --ring: 73 100% 59%;
+    --radius: 0.75rem;
+  }
+  body {
+    background: #0D0D0D;
+    color: #fff;
+  }
+}
+
+.glass {
+  background: rgba(23, 23, 23, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #2B2B2B;
+}
+
+.glow {
+  box-shadow: 0 0 0 1px #2B2B2B, 0 8px 40px -10px rgba(215, 255, 47, 0.15);
+}
+
+.bracket-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+.bracket-scroll::-webkit-scrollbar-track { background: #171717; }
+.bracket-scroll::-webkit-scrollbar-thumb { background: #2B2B2B; border-radius: 4px; }
+.bracket-scroll::-webkit-scrollbar-thumb:hover { background: #D7FF2F; }
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+.confetti { position: fixed; width: 10px; height: 10px; pointer-events: none; animation: confetti-fall 3s linear forwards; }
+
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.no-spinner { -moz-appearance: textfield; }
