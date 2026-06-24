@@ -338,7 +338,7 @@ GitHub:
 https://github.com/Ankan2508
 
 LinkedIn:
-(Add your LinkedIn profile)
+https://www.linkedin.com/in/bandyopadhyay-ankan/
 
 ---
 
