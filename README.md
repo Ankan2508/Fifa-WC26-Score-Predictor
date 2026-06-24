@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.png" width="100%">
+  <img src="banner.png" width="100%">
 </p>
 
 <h1 align="center">⚽ WC26 Predictor</h1>
