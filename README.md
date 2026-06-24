@@ -1,15 +1,13 @@
-# ⚽ WC26 Predictor
-
 <p align="center">
-  <img src="public/WC26 Predictor.png" width="150">
+  <img src="docs/banner.png" alt="WC26 Predictor Banner">
 </p>
 
-<h3 align="center">
-FIFA World Cup 2026 Prediction Platform
-</h3>
+<h1 align="center">
+⚽ WC26 Predictor
+</h1>
 
 <p align="center">
-Predict every match • Build your bracket • Compete globally
+Predict Every Match • Build Your Bracket • Compete Globally
 </p>
 
 ---
