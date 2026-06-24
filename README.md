@@ -1,16 +1,24 @@
 <p align="center">
-  <img src="docs/banner.png" alt="WC26 Predictor Banner">
+  <img src="docs/banner.png" width="100%">
 </p>
 
-<h1 align="center">
-⚽ WC26 Predictor
-</h1>
+<h1 align="center">⚽ WC26 Predictor</h1>
+
+<p align="center">
+  FIFA World Cup 2026 Prediction Platform
+</p>
 
 <p align="center">
 Predict Every Match • Build Your Bracket • Compete Globally
 </p>
 
----
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-15-black">
+  <img src="https://img.shields.io/badge/React-19-blue">
+  <img src="https://img.shields.io/badge/TypeScript-5-blue">
+  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-green">
+  <img src="https://img.shields.io/badge/FIFA-World_Cup_2026-lime">
+</p>
 
 ## 🌍 Live Demo
 
